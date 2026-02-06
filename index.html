@@ -130,29 +130,28 @@ import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";<!DOC
         } catch (e) { alert("Error: " + e.message); }
     };
 
+    // FIXED SAVE FUNCTION
     function packTable(id) {
         const t = document.getElementById(id);
         const headers = Array.from(t.querySelectorAll('thead input')).map(i => i.value);
-        const rows = Array.from(t.querySelectorAll('tbody tr')).map(tr => 
-            Array.from(tr.querySelectorAll('input')).map(i => i.value)
-        );
+        
+        // We turn each row into an Object {col0: "value", col1: "value"}
+        const rows = Array.from(t.querySelectorAll('tbody tr')).map(tr => {
+            let rowObj = {};
+            Array.from(tr.querySelectorAll('input')).forEach((inp, index) => {
+                rowObj['col' + index] = inp.value;
+            });
+            return rowObj;
+        });
         return { headers, rows };
     }
 
-    // LOAD
-    async function loadData() {
-        const snap = await getDoc(doc(db, "cloud_apps", "main_store"));
-        if (snap.exists()) {
-            const d = snap.data();
-            unpackTable('t1', d.t1);
-            unpackTable('t2', d.t2);
-            unpackTable('t3', d.t3);
-        }
-    }
-
+    // FIXED LOAD FUNCTION
     function unpackTable(id, data) {
-        if(!data) return;
+        if(!data || !data.rows) return;
         const t = document.getElementById(id);
+        
+        // Restore Headers
         const headRow = t.querySelector('thead tr');
         headRow.innerHTML = "";
         data.headers.forEach(h => {
@@ -160,6 +159,18 @@ import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";<!DOC
             th.innerHTML = `<input value="${h}">`;
             headRow.appendChild(th);
         });
+
+        // Restore Rows
+        const tbody = t.querySelector('tbody');
+        tbody.innerHTML = "";
+        data.rows.forEach(rowObj => {
+            const tr = tbody.insertRow();
+            Object.values(rowObj).forEach(val => {
+                const td = tr.insertCell();
+                td.innerHTML = `<input value="${val}">`;
+            });
+        });
+    }
         const tbody = t.querySelector('tbody');
         tbody.innerHTML = "";
         data.rows.forEach(r => {
@@ -218,4 +229,5 @@ const firebaseConfig = {
   measurementId: "G-BZLCRT4MH8"
 };
 </body>
+
 </html>
